@@ -32,7 +32,7 @@ public class UserController {
 	return service.findById(id).orElse(null);
     }
 
-    @PostMapping()
+    @PostMapping("/register")
     public UserEntity createUser(@RequestBody UserEntity user) {
 	return service.create(user);
     }

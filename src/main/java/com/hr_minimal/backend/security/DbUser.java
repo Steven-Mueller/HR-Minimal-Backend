@@ -1,6 +1,7 @@
 package com.hr_minimal.backend.security;
 
 import java.util.Collection;
+import java.util.List;
 
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
@@ -25,7 +26,7 @@ public class DbUser implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
 	// Roles
-	return null;
+	return List.of();
     }
 
     @Override
