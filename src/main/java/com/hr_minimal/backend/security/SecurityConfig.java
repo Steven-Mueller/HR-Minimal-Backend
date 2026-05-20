@@ -160,7 +160,7 @@ public class SecurityConfig {
 	// create RSA Key and store it in a KeyPair
 	@Bean
 	public KeyPair keyPair() throws NoSuchAlgorithmException {
-		var keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+		KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
 		keyPairGenerator.initialize(2048);
 		return keyPairGenerator.generateKeyPair();
 	}
@@ -177,9 +177,9 @@ public class SecurityConfig {
 	// JWKSource = RSAKey Source
 	@Bean
 	public JWKSource<SecurityContext> jwkSource(RSAKey rsaKey) {
-		var jwkSet = new JWKSet(rsaKey);
+		JWKSet jwkSet = new JWKSet(rsaKey);
 
-		var jwkSource = new JWKSource<>() {
+		JWKSource<SecurityContext> jwkSource = new JWKSource<>() {
 
 			@Override
 			public List<JWK> get(JWKSelector jwkSelector, SecurityContext context) throws KeySourceException {
