@@ -27,7 +27,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -47,144 +49,156 @@ import jakarta.servlet.http.HttpServletRequest;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    ///// FilterChain /////
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+	///// FilterChain /////
+	@Bean
+	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-	// disable csrf
-	http.csrf(new Customizer<CsrfConfigurer<HttpSecurity>>() {
+		// disable csrf
+		http.csrf(new Customizer<CsrfConfigurer<HttpSecurity>>() {
 
-	    @Override
-	    public void customize(CsrfConfigurer<HttpSecurity> csrf) {
-		csrf.disable();
-	    }
-	});
-
-	// cors configuration
-	http.cors(new Customizer<CorsConfigurer<HttpSecurity>>() {
-
-	    @Override
-	    public void customize(CorsConfigurer<HttpSecurity> cors) {
-		cors.configurationSource(new CorsConfigurationSource() {
-
-		    @Override
-		    public @Nullable CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
-			CorsConfiguration config = new CorsConfiguration();
-			config.setAllowedOrigins(List.of("http://localhost:5173"));
-			config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
-			config.setAllowedHeaders(List.of("Content-Type", "Authorization"));
-
-			return config;
-		    }
-		});
-	    }
-	});
-
-	// set sessionCreationPolicy
-	http.sessionManagement(new Customizer<SessionManagementConfigurer<HttpSecurity>>() {
-
-	    @Override
-	    public void customize(SessionManagementConfigurer<HttpSecurity> session) {
-		session.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-	    }
-	});
-
-	// handle authentication
-	http.authorizeHttpRequests(
-		new Customizer<AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry>() {
-
-		    @Override
-		    public void customize(
-			    AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth) {
-			// permitAll just for testing
-			auth.requestMatchers(HttpMethod.POST).permitAll();
-			auth.anyRequest().authenticated();
-		    }
+			@Override
+			public void customize(CsrfConfigurer<HttpSecurity> csrf) {
+				csrf.disable();
+			}
 		});
 
-	// use httpBasic
-	http.httpBasic(new Customizer<HttpBasicConfigurer<HttpSecurity>>() {
+		// cors configuration
+		http.cors(new Customizer<CorsConfigurer<HttpSecurity>>() {
 
-	    @Override
-	    public void customize(HttpBasicConfigurer<HttpSecurity> basic) {
-		basic.disable();
-	    }
-	});
+			@Override
+			public void customize(CorsConfigurer<HttpSecurity> cors) {
+				cors.configurationSource(new CorsConfigurationSource() {
 
-	http.oauth2ResourceServer(new Customizer<OAuth2ResourceServerConfigurer<HttpSecurity>>() {
+					@Override
+					public @Nullable CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
+						CorsConfiguration config = new CorsConfiguration();
+						config.setAllowedOrigins(List.of("http://localhost:5173"));
+						config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
+						config.setAllowedHeaders(List.of("Content-Type", "Authorization"));
 
-	    @Override
-	    public void customize(OAuth2ResourceServerConfigurer<HttpSecurity> t) {
-		// TODO Auto-generated method stub
+						return config;
+					}
+				});
+			}
+		});
 
-	    }
-	});
+		// set sessionCreationPolicy
+		http.sessionManagement(new Customizer<SessionManagementConfigurer<HttpSecurity>>() {
 
-	return http.build();
+			@Override
+			public void customize(SessionManagementConfigurer<HttpSecurity> session) {
+				session.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+			}
+		});
 
-    }
+		// handle authentication
+		http.authorizeHttpRequests(
+				new Customizer<AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry>() {
 
-    ///// PasswordEncoder /////
-    @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-	return new BCryptPasswordEncoder();
-    }
+					@Override
+					public void customize(
+							AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth) {
+						// permitAll just for testing
+						auth.requestMatchers(HttpMethod.POST).permitAll();
+						auth.anyRequest().authenticated();
+					}
+				});
 
-    ///// Authentication /////
-    @Bean
-    public AuthenticationManager authenticationManager(HttpSecurity http, BCryptPasswordEncoder encoder,
-	    UserDetailsService userDetailsService) throws Exception {
+		// use httpBasic
+		http.httpBasic(new Customizer<HttpBasicConfigurer<HttpSecurity>>() {
 
-	DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
-	provider.setPasswordEncoder(encoder);
+			@Override
+			public void customize(HttpBasicConfigurer<HttpSecurity> basic) {
+				// basic.disable();
+			}
+		});
 
-	AuthenticationManagerBuilder builder = http.getSharedObject(AuthenticationManagerBuilder.class);
+		http.oauth2ResourceServer(new Customizer<OAuth2ResourceServerConfigurer<HttpSecurity>>() {
 
-	builder.authenticationProvider(provider);
+			@Override
+			public void customize(OAuth2ResourceServerConfigurer<HttpSecurity> token) {
+				token.jwt(new Customizer<OAuth2ResourceServerConfigurer<HttpSecurity>.JwtConfigurer>() {
+					
+					@Override
+					public void customize(OAuth2ResourceServerConfigurer<HttpSecurity>.JwtConfigurer t) {
+						// TODO Auto-generated method stub
+						
+					}
+				});
 
-	return builder.build();
+			}
+		});
 
-    }
+		return http.build();
 
-    ///// JWT /////
+	}
 
-    // create RSA KeyPair
-    @Bean
-    public KeyPair keyPair() throws NoSuchAlgorithmException {
-	var keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-	keyPairGenerator.initialize(2048);
-	return keyPairGenerator.generateKeyPair();
-    }
+	///// PasswordEncoder /////
+	@Bean
+	public BCryptPasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
 
-    // create object to use RSA KeyPair
-    @Bean
-    public RSAKey rsaKey(KeyPair keyPair) {
-	return new RSAKey.Builder(
-		(RSAPublicKey) keyPair.getPublic())
-		.privateKey(keyPair.getPrivate())
-		.keyID(UUID.randomUUID().toString()).build();
-    }
-    
-    // JWK	 = RSAKey in JSON Format
-    // JWKSet	 = List of RSAKeys
-    // JWKSource = RSAKey Source
-    public JWKSource<SecurityContext> jwkSource(RSAKey rsaKey) {
-	var jwkSet = new JWKSet(rsaKey);
-	
-	var jwkSource = new JWKSource<>() {
+	///// Authentication /////
+	@Bean
+	public AuthenticationManager authenticationManager(HttpSecurity http, BCryptPasswordEncoder encoder,
+			UserDetailsService userDetailsService) throws Exception {
 
-	    @Override
-	    public List<JWK> get(JWKSelector jwkSelector, SecurityContext context) throws KeySourceException {
-		return jwkSelector.select(jwkSet);
-	    }
-	};
-	
-	return jwkSource;
-    }
-    
-    // create decoder
-    @Bean
-    public JwtDecoder jwtDecoder(RSAKey rsaKey) throws JOSEException {
-	return NimbusJwtDecoder.withPublicKey(rsaKey.toRSAPublicKey()).build();
-    }
+		DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+		provider.setPasswordEncoder(encoder);
+
+		AuthenticationManagerBuilder builder = http.getSharedObject(AuthenticationManagerBuilder.class);
+
+		builder.authenticationProvider(provider);
+
+		return builder.build();
+
+	}
+
+	///// JWT /////
+
+	// create RSA Key and store it in a KeyPair
+	@Bean
+	public KeyPair keyPair() throws NoSuchAlgorithmException {
+		var keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+		keyPairGenerator.initialize(2048);
+		return keyPairGenerator.generateKeyPair();
+	}
+
+	// create RSAKey-Object because it's used instead of KeyPair
+	@Bean
+	public RSAKey rsaKey(KeyPair keyPair) {
+		return new RSAKey.Builder((RSAPublicKey) keyPair.getPublic()).privateKey(keyPair.getPrivate())
+				.keyID(UUID.randomUUID().toString()).build();
+	}
+
+	// JWK = RSAKey in JSON Format
+	// JWKSet = List of RSAKeys
+	// JWKSource = RSAKey Source
+	@Bean
+	public JWKSource<SecurityContext> jwkSource(RSAKey rsaKey) {
+		var jwkSet = new JWKSet(rsaKey);
+
+		var jwkSource = new JWKSource<>() {
+
+			@Override
+			public List<JWK> get(JWKSelector jwkSelector, SecurityContext context) throws KeySourceException {
+				return jwkSelector.select(jwkSet);
+			}
+		};
+
+		return jwkSource;
+	}
+
+	// decoder for checking tokens
+	@Bean
+	public JwtDecoder jwtDecoder(RSAKey rsaKey) throws JOSEException {
+		return NimbusJwtDecoder.withPublicKey(rsaKey.toRSAPublicKey()).build();
+	}
+
+	// encoder to create tokens
+	@Bean
+	public JwtEncoder jwtEncoder(JWKSource<SecurityContext> jwkSource) {
+		return new NimbusJwtEncoder(jwkSource);
+	}
 }
